@@ -3,7 +3,9 @@
 //include_once "View/landing.php";
 
 include_once "Router/Router.php";
+include_once "Controller/UsuarioController.php";
 use Router\Router;
+use Controller\UsuarioController;
 
 //echo "estoy en el index";
 

@@ -20,7 +20,7 @@ class Router
     public function resolver(string $metodohttp,string $url){
         //Lógica para crear una instancia y llamar al méthodo de la clase
         echo $metodohttp . "<br>". $url;
-        var_dump(explode("/",$url));
+        $uriExplotada = explode("/",$url);
 
 //        [UsuarioController::class,"edit"] = $this->rutas['GET']['/users/{id}/edit'];
 
@@ -32,7 +32,7 @@ class Router
         }else{
             [$clase,$metodo]=$accion;
             $instance = new $clase();
-            call_user_func([$instance, $metodo]);
+            call_user_func_array([$instance, $metodo],[$uriExplotada[2]]);
         }
     }
 
