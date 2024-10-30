@@ -11,8 +11,8 @@ class Router
         $this->rutas=array();
     }
 
-    public function addRoute(string $metodohttp,string $url,string $clase, string $metodo){
-        $this->rutas[$metodohttp][$url]=[$clase,$metodo];
+    public function addRoute(string $metodohttp,string $url,array|callable $accion){
+        $this->rutas[$metodohttp][$url]=$accion;
     }
 
     public function resolver(string $metodohttp,string $url){
