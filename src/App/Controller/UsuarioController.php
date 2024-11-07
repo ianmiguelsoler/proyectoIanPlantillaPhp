@@ -3,7 +3,7 @@
 namespace App\Controller;
 use App\Controller\InterfaceController;
 use Ramsey\Uuid\Uuid;
-
+use App\Class\Usuario;
 include_once "InterfaceController.php";
 
 
@@ -23,18 +23,35 @@ class UsuarioController implements InterfaceController
     }
 
     //POST /users
-    public function store(){
-        //Guardaría en la base de datos el usuario
+    // En UsuarioController
+    // En UsuarioController, archivo App/Controller/UsuarioController.php
+    public function store()
+    {
+        // Obtener los datos enviados desde el formulario
+        $datos = $_POST;
 
+        // Validación de los datos
+        $errores = Usuario::validarUsuario($datos);
 
-        //Validación del usuario
+        if (!empty($errores)) {
+            // Si hay errores, mostramos los mensajes de error
+            foreach ($errores as $campo => $error) {
+                echo "<p>Error en $campo: $error</p>";
+            }
+        } else {
+            // No hay errores, crear y guardar el usuario
+            $usuario = new Usuario();
+            $usuario->setUsername($datos['username']);
+            $usuario->setPassword(password_hash($datos['password'], PASSWORD_BCRYPT));
+            $usuario->setCorreoelectronico($datos['correoelectronico']);
+            // Asignar otros campos si es necesario
 
-
-
-        //Creación del usuario
-        echo Uuid::uuid4();
-        echo "Función para guardar un usuario";
+            // Aquí deberías guardar el usuario en la base de datos
+            echo Uuid::uuid4();  // Para el UUID
+            echo "Usuario guardado correctamente";
+        }
     }
+
 
     //GET /users/{id_usuario}/edit
     public function edit($id){

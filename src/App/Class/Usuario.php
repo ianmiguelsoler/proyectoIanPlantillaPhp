@@ -346,6 +346,28 @@ class Usuario
         return 0.0;
     }
 
+    //metodo que valida usuarios
+    public static function validarUsuario(array $datos): array
+    {
+        $errores = [];
+
+        // Validación del username
+        if (empty($datos['username']) || strlen($datos['username']) < 5) {
+            $errores['username'] = "El nombre de usuario debe tener al menos 5 caracteres.";
+        }
+
+        // Validación de la contraseña
+        if (empty($datos['password']) || strlen($datos['password']) < 6) {
+            $errores['password'] = "La contraseña debe tener al menos 6 caracteres.";
+        }
+
+        // Validación del correo electrónico
+        if (!filter_var($datos['correoelectronico'], FILTER_VALIDATE_EMAIL)) {
+            $errores['correoelectronico'] = "El correo electrónico no es válido.";
+        }
+        
+        return $errores;
+    }
 
 
 
