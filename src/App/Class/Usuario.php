@@ -4,12 +4,16 @@ namespace App\Class;
 include_once "Enum/TipoUsuario.php";
 use App\Class\Enum\TipoUsuario;
 use DateTime;
+use Ramsey\Uuid\Uuid;
+use Respect\Validation\Validator;
+use Respect\Validation\Exceptions\NestedValidationException;
 
 /**
  *
  */
 class Usuario
 {
+    private string $uuid;
     /**
      * @var string
      */
@@ -332,6 +336,16 @@ class Usuario
         $this->tipo = $tipo;
         return $this;
     }
+    public function getUuid(): string
+    {
+        return $this->uuid;
+    }
+
+    public function setUuid(string $uuid): Usuario
+    {
+        $this->uuid = $uuid;
+        return $this;
+    }
 
 
     //Espacio para funciones definidas por el programador
@@ -346,29 +360,56 @@ class Usuario
         return 0.0;
     }
 
-    //metodo que valida usuarios
-    public static function validarUsuario(array $datos): array
+    public static function filtrarDatosUsuario(array $datosUsuario):false|array
     {
-        $errores = [];
+        try {
 
-        // Validación del username
-        if (empty($datos['username']) || strlen($datos['username']) < 5) {
-            $errores['username'] = "El nombre de usuario debe tener al menos 5 caracteres.";
+            Validator::key('usernick', Validator::stringType()->notEmpty()->length(3, null))
+                ->key('username', Validator::stringType())
+                ->key('userdni', Validator::stringType()->length(9,9))
+                ->key('usersurname', Validator::stringType())
+                ->key('userpass', Validator::stringType()->length(8, null))
+                ->key('useremail', Validator::email())
+                ->key('userbirthdate', Validator::date('d/m/Y')->minAge(18, 'd/m/Y'))
+                ->key('useradress', Validator::stringType())
+                ->key('userphone', Validator::phone())
+                ->key('useraltphone', Validator::optional(Validator::phone()),false)
+                ->assert($datosUsuario);
+
+        } catch (NestedValidationException $exception) {
+            return $exception->getMessages();
         }
 
-        // Validación de la contraseña
-        if (empty($datos['password']) || strlen($datos['password']) < 6) {
-            $errores['password'] = "La contraseña debe tener al menos 6 caracteres.";
-        }
-
-        // Validación del correo electrónico
-        if (!filter_var($datos['correoelectronico'], FILTER_VALIDATE_EMAIL)) {
-            $errores['correoelectronico'] = "El correo electrónico no es válido.";
-        }
-        
-        return $errores;
+        return false;
     }
 
+    public static function crearUsuarioAPartirDeUnArray(array $datosUsuario):Usuario{
+        $usuario = new Usuario();
+        $usuario->setUuid(Uuid::uuid4());
+        $usuario->setUsername($datosUsuario['usernick']??"Sin nick");
+        $usuario->setNombre($datosUsuario['username']??"Sin nombre");
+        $usuario->setApellidos($datosUsuario['usersurname']??"Sin apellidos");
+        $usuario->setCorreoelectronico($datosUsuario['useremail']??"Sin nombre");
+        $usuario->setPassword($datosUsuario['userpass']??"Sin password");
+        $usuario->setDireccion($datosUsuario['useradress']??"Sin direccion");
+        $usuario->setDni($datosUsuario['userdni']??"00000000A");
+        $usuario->setFechanac(DateTime::createFromFormat('d/m/Y',$datosUsuario['userbirthdate']));
+        $telefonos=[];
+
+        if (isset($datosUsuario['userphone'])){
+            $telefono=Telefono::crearTelefonoDesdeString($datosUsuario['userphone']);
+            $telefonos[]=$telefono;
+        }
+        if (isset($datosUsuario['useraltphone'])){
+            $telefono=Telefono::crearTelefonoDesdeString($datosUsuario['useraltphone']);
+            $telefonos[]=$telefono;
+        }
+
+        $usuario->setTelefonos($telefonos);
+
+
+        return $usuario;
+    }
 
 
 }

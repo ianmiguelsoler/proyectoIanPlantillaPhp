@@ -10,6 +10,14 @@
     <option name="highlightLevel" value="WARNING" />
     <option name="transferred" value="true" />
   </component>
+  <component name="PhpIncludePathManager">
+    <include_path>
+      <path value="$PROJECT_DIR$/src/vendor/composer" />
+      <path value="$PROJECT_DIR$/src/vendor/brick/math" />
+      <path value="$PROJECT_DIR$/src/vendor/ramsey/collection" />
+      <path value="$PROJECT_DIR$/src/vendor/ramsey/uuid" />
+    </include_path>
+  </component>
   <component name="PhpInterpreters">
     <interpreters>
       <interpreter id="adf917fa-c5cc-4de3-bedb-7878db5fe887" name="apache_php_oo" home="docker-compose://DATA" auto="false" debugger_id="php.debugger.XDebug">

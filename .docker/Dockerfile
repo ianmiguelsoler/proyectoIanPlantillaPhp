@@ -53,6 +53,13 @@ WORKDIR /var/www/html
 # instalación de Composer
 COPY --from=composer:2.0 /usr/bin/composer /usr/local/bin/composer
 
+# Instalación de respect/validation
+RUN composer global require respect/validation && ln -s /root/.composer/vendor/bin/respect /usr/local/bin/respect
+
+# Instalación de respect/validation y nesbot/carbon
+RUN composer global require respect/validation nesbot/carbon && \
+    ln -s /root/.composer/vendor/bin/respect /usr/local/bin/respect
+
 # instalación de phpDocumentor
 #COPY --from=phpdoc/phpdoc /opt/phpdoc/bin/phpdoc /usr/local/bin/phpdoc
 
