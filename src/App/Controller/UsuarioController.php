@@ -3,6 +3,7 @@
 namespace App\Controller;
 use App\Class\Usuario;
 use App\Controller\InterfaceController;
+use App\Excepcions\DeleteUserException;
 use App\Model\UsuarioModel;
 use Ramsey\Uuid\Uuid;
 include_once "InterfaceController.php";
@@ -33,12 +34,10 @@ class UsuarioController implements InterfaceController
             $usuario=Usuario::crearUsuarioAPartirDeUnArray($_POST);
         }
 
-        var_dump($usuario);
-
-        UsuarioModel::guardarUsuario($usuario);
+        $usuario->save();
 
         //Creación del usuario
-        echo "Función para guardar un usuario";
+        echo json_encode($usuario);
     }
 
     //GET /users/{id_usuario}/edit
@@ -60,14 +59,24 @@ class UsuarioController implements InterfaceController
     //GET /users/{id_usuario}
     public function show($id){
         //Mostraría los datos de un solo usuario
-        echo "Mostar los datos del usuario $id";
+        if (!Uuid::isValid($id)){
+            //Mostrar un error id en formato invalido
+        }else{
+            var_dump(UsuarioModel::leerUsuario($id));
+        }
+
     }
 
 
     //DELETE /users/{id_usuario}
     public function destroy($id){
         //Borrar los datos de un usuario
-        echo "Función para borrar los datos del usuario $id";
+        try {
+            UsuarioModel::borrarUsuario($id);
+            echo "Borrado correcto";
+        }catch (DeleteUserException $e){
+            echo $e->getMessage();
+        }
     }
 
 }

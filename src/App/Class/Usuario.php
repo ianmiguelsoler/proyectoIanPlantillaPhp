@@ -3,16 +3,21 @@ namespace App\Class;
 
 include_once "Enum/TipoUsuario.php";
 use App\Class\Enum\TipoUsuario;
+use App\Model\UsuarioModel;
 use DateTime;
 use Ramsey\Uuid\Uuid;
 use Respect\Validation\Validator;
 use Respect\Validation\Exceptions\NestedValidationException;
+use JsonSerializable;
 
 /**
  *
  */
-class Usuario
+class Usuario implements JsonSerializable
 {
+    /**
+     * @var string
+     */
     private string $uuid;
     /**
      * @var string
@@ -49,11 +54,11 @@ class Usuario
     /**
      * @var array
      */
-    public array $telefonos;
+    public ?array $telefonos;
     /**
      * @var array
      */
-    public array $reservas;
+    public ?array $reservas;
     /**
      * @var float|int
      */
@@ -61,11 +66,11 @@ class Usuario
     /**
      * @var string
      */
-    private string $tarjetaPago;
+    private ?string $tarjetaPago;
     /**
      * @var array
      */
-    public array $datosAdicionales;
+    public ?array $datosAdicionales;
     /**
      * @var TipoUsuario
      */
@@ -78,9 +83,10 @@ class Usuario
      */
     public function __construct()
     {
-        $this->reservas=array();
-        $this->telefonos=array();
-        $this->datosAdicionales=array();
+        $this->reservas=null;
+        $this->telefonos=null;
+        $this->datosAdicionales=null;
+        $this->tarjetaPago=null;
         $this->calificacion=3;
         $this->tipo=TipoUsuario::USER;
     }
@@ -117,7 +123,7 @@ class Usuario
      */
     public function setPassword(string $password):Usuario
     {
-        $this->password = $password;
+        $this->password = password_hash($password,PASSWORD_DEFAULT);
         return $this;
     }
 
@@ -232,7 +238,7 @@ class Usuario
     /**
      * @return array
      */
-    public function getTelefonos(): array
+    public function getTelefonos(): ?array
     {
         return $this->telefonos;
     }
@@ -250,7 +256,7 @@ class Usuario
     /**
      * @return array
      */
-    public function getReservas(): array
+    public function getReservas(): ?array
     {
         return $this->reservas;
     }
@@ -286,7 +292,7 @@ class Usuario
     /**
      * @return string
      */
-    public function getTarjetaPago(): string
+    public function getTarjetaPago(): ?string
     {
         return $this->tarjetaPago;
     }
@@ -304,7 +310,7 @@ class Usuario
     /**
      * @return array
      */
-    public function getDatosAdicionales(): array
+    public function getDatosAdicionales(): ?array
     {
         return $this->datosAdicionales;
     }
@@ -313,10 +319,19 @@ class Usuario
      * @param array $datosAdicionales
      * @return $this
      */
-    public function setDatosAdicionales(array $datosAdicionales): Usuario
+    public function setDatosAdicionales(string|array $datosAdicionales): Usuario
     {
-        $this->datosAdicionales = $datosAdicionales;
+        if(is_string($datosAdicionales)){
+            //Nos ha llegado una cadena JSON
+            $this->datosAdicionales=json_decode($datosAdicionales,true);
+
+        }else{
+            //Nos ha llegado un array con los datos adicionales de un usuario
+            $this->datosAdicionales = $datosAdicionales;
+
+        }
         return $this;
+
     }
 
     /**
@@ -336,17 +351,41 @@ class Usuario
         $this->tipo = $tipo;
         return $this;
     }
+
+    /**
+     * @return string
+     */
     public function getUuid(): string
     {
         return $this->uuid;
     }
 
+    /**
+     * @param string $uuid
+     * @return $this
+     */
     public function setUuid(string $uuid): Usuario
     {
         $this->uuid = $uuid;
         return $this;
     }
 
+    public function jsonSerialize(): array
+    {
+        return [
+            'useruuid'=>$this->uuid,
+            'usernick'=>$this->username,
+            'username'=>$this->nombre,
+            'usersurname'=>$this->apellidos,
+            'useremail'=>$this->correoelectronico,
+            'useradress'=>$this->direccion,
+            'userdni'=>$this->dni,
+            'usercard'=>$this->tarjetaPago,
+            'userdata'=>json_encode($this->datosAdicionales),
+            'usermark'=>$this->calificacion,
+            'userphones'=>$this->telefonos
+        ];
+    }
 
     //Espacio para funciones definidas por el programador
 
@@ -360,6 +399,10 @@ class Usuario
         return 0.0;
     }
 
+    /**
+     * @param array $datosUsuario
+     * @return false|array
+     */
     public static function filtrarDatosUsuario(array $datosUsuario):false|array
     {
         try {
@@ -374,6 +417,7 @@ class Usuario
                 ->key('useradress', Validator::stringType())
                 ->key('userphone', Validator::phone())
                 ->key('useraltphone', Validator::optional(Validator::phone()),false)
+                ->key('userdata', Validator::optional(Validator::json()),mandatory: false)
                 ->assert($datosUsuario);
 
         } catch (NestedValidationException $exception) {
@@ -383,17 +427,32 @@ class Usuario
         return false;
     }
 
+    /**
+     * @param array $datosUsuario
+     * @return Usuario
+     */
     public static function crearUsuarioAPartirDeUnArray(array $datosUsuario):Usuario{
+
         $usuario = new Usuario();
-        $usuario->setUuid(Uuid::uuid4());
+        $usuario->setUuid($datosUsuario['useruuid']??Uuid::uuid4());
         $usuario->setUsername($datosUsuario['usernick']??"Sin nick");
         $usuario->setNombre($datosUsuario['username']??"Sin nombre");
         $usuario->setApellidos($datosUsuario['usersurname']??"Sin apellidos");
         $usuario->setCorreoelectronico($datosUsuario['useremail']??"Sin nombre");
-        $usuario->setPassword($datosUsuario['userpass']??"Sin password");
+
+        //Además de almacenar el password lo encriptamos
+        //TODO gestionar password recibido de la base de datos
+        $usuario->setPassword(password_hash($datosUsuario['userpass'],PASSWORD_DEFAULT)??"Sin password");
         $usuario->setDireccion($datosUsuario['useradress']??"Sin direccion");
         $usuario->setDni($datosUsuario['userdni']??"00000000A");
         $usuario->setFechanac(DateTime::createFromFormat('d/m/Y',$datosUsuario['userbirthdate']));
+        $usuario->setDatosAdicionales($datosUsuario['userdata']??'Sin datos');
+        $usuario->setCalificacion($datosUsuario['usermark']??0.0);
+        $usuario->setTarjetaPago($datosUsuario['usercard']??"Sin tarjeta");
+        //TODO convertir string de la base de datos en tipo
+        //$usuario->setTipo($datosUsuario['usertype']??TipoUsuario::GUEST);
+
+
         $telefonos=[];
 
         if (isset($datosUsuario['userphone'])){
@@ -408,7 +467,23 @@ class Usuario
         $usuario->setTelefonos($telefonos);
 
 
+
         return $usuario;
+    }
+
+    /**
+     * @return void
+     */
+    public function save(){
+        UsuarioModel::guardarUsuario($this);
+    }
+
+    public function edit(){
+        UsuarioModel::editarUsuario($this);
+    }
+
+    public function delete(){
+        UsuarioModel::borrarUsuario($this);
     }
 
 
