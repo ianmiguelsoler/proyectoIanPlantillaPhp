@@ -123,7 +123,7 @@ class Usuario implements JsonSerializable
      */
     public function setPassword(string $password):Usuario
     {
-        $this->password = password_hash($password,PASSWORD_DEFAULT);
+        $this->password = $password;
         return $this;
     }
 
@@ -403,29 +403,13 @@ class Usuario implements JsonSerializable
      * @param array $datosUsuario
      * @return false|array
      */
-    public static function filtrarDatosUsuario(array $datosUsuario):false|array
+    public static function filtrarDatosUsuarioParaCrear(array $datosUsuario):false|array
     {
-        try {
 
-            Validator::key('usernick', Validator::stringType()->notEmpty()->length(3, null))
-                ->key('username', Validator::stringType())
-                ->key('userdni', Validator::stringType()->length(9,9))
-                ->key('usersurname', Validator::stringType())
-                ->key('userpass', Validator::stringType()->length(8, null))
-                ->key('useremail', Validator::email())
-                ->key('userbirthdate', Validator::date('d/m/Y')->minAge(18, 'd/m/Y'))
-                ->key('useradress', Validator::stringType())
-                ->key('userphone', Validator::phone())
-                ->key('useraltphone', Validator::optional(Validator::phone()),false)
-                ->key('userdata', Validator::optional(Validator::json()),mandatory: false)
-                ->assert($datosUsuario);
-
-        } catch (NestedValidationException $exception) {
-            return $exception->getMessages();
-        }
 
         return false;
     }
+
 
     /**
      * @param array $datosUsuario
@@ -440,9 +424,14 @@ class Usuario implements JsonSerializable
         $usuario->setApellidos($datosUsuario['usersurname']??"Sin apellidos");
         $usuario->setCorreoelectronico($datosUsuario['useremail']??"Sin nombre");
 
-        //Además de almacenar el password lo encriptamos
-        //TODO gestionar password recibido de la base de datos
-        $usuario->setPassword(password_hash($datosUsuario['userpass'],PASSWORD_DEFAULT)??"Sin password");
+        if (password_get_info($datosUsuario['userpass'])['algo']=='2y'){
+            //Lectura de la base de datos con el password ya encriptado
+            $usuario->setPassword($datosUsuario['userpass']);
+        }else{
+            //Obtenermos los datos del formulario
+            $usuario->setPassword(password_hash($datosUsuario['userpass'],PASSWORD_DEFAULT)??"Sin password");
+        }
+
         $usuario->setDireccion($datosUsuario['useradress']??"Sin direccion");
         $usuario->setDni($datosUsuario['userdni']??"00000000A");
         $usuario->setFechanac(DateTime::createFromFormat('d/m/Y',$datosUsuario['userbirthdate']));
@@ -450,7 +439,9 @@ class Usuario implements JsonSerializable
         $usuario->setCalificacion($datosUsuario['usermark']??0.0);
         $usuario->setTarjetaPago($datosUsuario['usercard']??"Sin tarjeta");
         //TODO convertir string de la base de datos en tipo
-        //$usuario->setTipo($datosUsuario['usertype']??TipoUsuario::GUEST);
+        $usuario->setTipo(TipoUsuario::convertirStringATipoUsuario(
+            $datosUsuario['usertype']??null)??TipoUsuario::GUEST
+        );
 
 
         $telefonos=[];
@@ -474,12 +465,14 @@ class Usuario implements JsonSerializable
     /**
      * @return void
      */
-    public function save(){
+    public function save():Usuario{
         UsuarioModel::guardarUsuario($this);
+        return $this;
     }
 
-    public function edit(){
+    public function edit():Usuario{
         UsuarioModel::editarUsuario($this);
+        return $this;
     }
 
     public function delete(){
